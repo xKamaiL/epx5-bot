@@ -9,6 +9,7 @@ import (
 
 	firebase "firebase.google.com/go"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/moonrhythm/parapet"
 
 	"github.com/xkamail/epx5-bot/fsctx"
@@ -57,6 +58,30 @@ func run(ctx context.Context) error {
 			ctx = fsctx.NewContext(ctx, client)
 			ctx = cloud.NewContext(ctx, storageClient)
 			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}))
+	srv.Use(parapet.MiddlewareFunc(middleware.StripSlashes))
+	srv.Use(parapet.MiddlewareFunc(func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if rvr := recover(); rvr != nil && rvr != http.ErrAbortHandler {
+					middleware.PrintPrettyStack(rvr)
+					// TODO: sent json response
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+			}()
+
+			next.ServeHTTP(w, r)
+		}
+
+		return http.HandlerFunc(fn)
+	}))
+	srv.Use(parapet.MiddlewareFunc(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if len(w.Header().Get("Content-Type")) == 0 {
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			}
+			next.ServeHTTP(w, r)
 		})
 	}))
 	srv.Addr = net.JoinHostPort("", port)
