@@ -3,46 +3,69 @@ package main
 import (
 	"context"
 	"log"
+	"net"
+	"net/http"
 	"os"
 
 	firebase "firebase.google.com/go"
-	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/go-chi/chi/v5"
+	"github.com/moonrhythm/parapet"
 
 	"github.com/xkamail/epx5-bot/fsctx"
-	"github.com/xkamail/epx5-bot/user"
+	"github.com/xkamail/epx5-bot/internal/cloud"
 )
 
 func main() {
-	projectID := os.Getenv("FIREBASE_PROJECT_ID")
 	ctx := context.Background()
-	conf := &firebase.Config{ProjectID: projectID}
-
-	app, err := firebase.NewApp(ctx, conf)
-	if err != nil {
+	if err := run(ctx); err != nil {
 		log.Fatalln(err)
 	}
+}
 
+func readEnv(key, defaultValue string) string {
+	read := os.Getenv(key)
+	if read == "" {
+		return defaultValue
+	}
+	return read
+}
+
+func run(ctx context.Context) error {
+	projectID := readEnv("FIREBASE_PROJECT_ID", "")
+	port := readEnv("PORT", "8080")
+
+	app, err := firebase.NewApp(ctx, &firebase.Config{ProjectID: projectID})
+	if err != nil {
+		return err
+	}
 	client, err := app.Firestore(ctx)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	defer client.Close()
-	ctx = fsctx.NewContext(ctx, client)
 
-	snowflake, err := discord.ParseSnowflake("395561779368951811")
+	storageClient, err := app.Storage(ctx)
 	if err != nil {
-		return
+		return err
 	}
-	id := discord.UserID(snowflake)
+	srv := parapet.NewBackend()
+	srv.Handler = handlers()
+	// inject client context
+	srv.Use(parapet.MiddlewareFunc(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			ctx = fsctx.NewContext(ctx, client)
+			ctx = cloud.NewContext(ctx, storageClient)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}))
+	srv.Addr = net.JoinHostPort("", port)
+	log.Println("ListenAndServe on ", srv.Addr)
+	return srv.ListenAndServe()
+}
 
-	//if _, err := user.Create(ctx, id, "xkamail", "as", "4882"); err != nil {
-	//	log.Fatalln(err)
-	//
-	//}
-	acc, err := user.Find(ctx, id)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	log.Println(acc)
-	select {}
+func handlers() http.Handler {
+	r := chi.NewRouter()
+
+	return r
 }
