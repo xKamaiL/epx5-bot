@@ -21,6 +21,7 @@ func main() {
 }
 
 func run() error {
+	log.Println("Starting...")
 	s := session.New("Bot " + token)
 	s.AddHandler(func(c *gateway.MessageCreateEvent) {
 		log.Println(c.Author.Username, "sent", c.Content)
@@ -36,6 +37,9 @@ func run() error {
 	s.AddIntents(gateway.IntentGuildInvites)
 	s.AddIntents(gateway.IntentGuildMessages)
 	s.AddIntents(gateway.IntentGuildMessageReactions)
+
+	// inject handlers into the session
+	handlers(s)
 
 	if err := s.Open(context.Background()); err != nil {
 		return err
