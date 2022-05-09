@@ -26,8 +26,16 @@ func run() error {
 		log.Println(c.Author.Username, "sent", c.Content)
 	})
 	// Add the needed Gateway intents.
+	s.AddIntents(gateway.IntentGuilds)
 	s.AddIntents(gateway.IntentGuildMessages)
-	s.AddIntents(gateway.IntentDirectMessages)
+	s.AddIntents(gateway.IntentGuildBans)
+	s.AddIntents(gateway.IntentGuildEmojis)
+	s.AddIntents(gateway.IntentGuildIntegrations)
+	s.AddIntents(gateway.IntentGuildWebhooks)
+	s.AddIntents(gateway.IntentGuildVoiceStates)
+	s.AddIntents(gateway.IntentGuildInvites)
+	s.AddIntents(gateway.IntentGuildMessages)
+	s.AddIntents(gateway.IntentGuildMessageReactions)
 
 	if err := s.Open(context.Background()); err != nil {
 		return err
