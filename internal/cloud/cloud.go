@@ -7,6 +7,7 @@ import (
 	"log"
 	"mime/multipart"
 	"path"
+	"time"
 )
 
 var (
@@ -15,6 +16,9 @@ var (
 )
 
 func Upload(ctx context.Context, pathname string, fh multipart.FileHeader) (any, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	
 	bucket, err := client(ctx).DefaultBucket()
 	if err != nil {
 		return nil, err
