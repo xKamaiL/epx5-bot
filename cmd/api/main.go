@@ -53,12 +53,13 @@ func run(ctx context.Context) error {
 	srv.Handler = handlers()
 	// inject client context
 	srv.Use(parapet.MiddlewareFunc(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			ctx = fsctx.NewContext(ctx, client)
 			ctx = cloud.NewContext(ctx, storageClient)
 			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+		}
+		return http.HandlerFunc(fn)
 	}))
 	srv.Use(parapet.MiddlewareFunc(middleware.StripSlashes))
 	srv.Use(parapet.MiddlewareFunc(func(next http.Handler) http.Handler {
@@ -77,12 +78,13 @@ func run(ctx context.Context) error {
 		return http.HandlerFunc(fn)
 	}))
 	srv.Use(parapet.MiddlewareFunc(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fn := func(w http.ResponseWriter, r *http.Request) {
 			if len(w.Header().Get("Content-Type")) == 0 {
 				w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			}
 			next.ServeHTTP(w, r)
-		})
+		}
+		return http.HandlerFunc(fn)
 	}))
 	srv.Addr = net.JoinHostPort("", port)
 	log.Println("ListenAndServe on ", srv.Addr)
