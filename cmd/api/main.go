@@ -131,6 +131,16 @@ func handlers() http.Handler {
 				}
 				w.Write([]byte("PDF Generated"))
 			})
+			r.Get("/search", func(w http.ResponseWriter, r *http.Request) {
+				ctx := r.Context()
+				var p cloud.SearchParam
+				result, err := cloud.Search(ctx, p)
+				if err != nil {
+					JSONErr(w, err)
+					return
+				}
+				JSON(w, result)
+			})
 			r.Post("/folder", func(w http.ResponseWriter, r *http.Request) {
 				var p struct {
 					Name string `json:"name"`
