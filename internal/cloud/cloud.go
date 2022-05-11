@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"path"
@@ -84,18 +85,15 @@ func List(ctx context.Context, q ListParam) ([]*File, error) {
 			continue
 		}
 
-		name := strings.Replace(attrs.Name, q.Prefix, "", 1)
-		fileType := FileTypeFile
+		name := parseFileName(attrs.Name)
+		fileType := parseFileType(attrs.Name)
 
-		if strings.Contains(name, "/") && !strings.Contains(name, ".") {
-			fileType = FileTypeFolder
-		}
 		// skip file in sub folder
 		if strings.Count(attrs.Name, "/") > strings.Count(q.Prefix, "/")+1 && strings.HasSuffix(name, "/") {
 			continue
 		}
 		// skip directory/file_name
-		if strings.Contains(name, "/") && !strings.HasSuffix(name, "/") {
+		if strings.Contains(attrs.Name, "/") && !strings.HasSuffix(attrs.Name, "/") {
 			continue
 		}
 
@@ -111,9 +109,7 @@ func List(ctx context.Context, q ListParam) ([]*File, error) {
 		})
 	}
 
-	sort.Slice(dir, func(i, j int) bool {
-		return dir[i].Type > dir[j].Type
-	})
+	sort.Slice(dir, sortByFolder(dir))
 
 	return dir, nil
 }
@@ -178,4 +174,101 @@ func Upload(ctx context.Context, pathname string, fh *multipart.FileHeader) (any
 	}
 
 	return nil, nil
+}
+
+type SearchParam struct {
+	InFolder string
+	Keyword  string
+}
+
+func (p *SearchParam) Valid() error {
+	p.Keyword = strings.ToLower(p.Keyword)
+	p.InFolder = strings.TrimSpace(p.InFolder)
+	return nil
+}
+
+func Search(ctx context.Context, p SearchParam) ([]*File, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+
+	if err := p.Valid(); err != nil {
+		return nil, err
+	}
+
+	bucket, err := client(ctx).DefaultBucket()
+	if err != nil {
+		return nil, err
+	}
+	it := bucket.Objects(ctx, &storage.Query{
+		Prefix: p.InFolder,
+	})
+	dir := make([]*File, 0)
+	for {
+		attrs, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("Bucket(%q).Objects: %v", bucket, err)
+		}
+		if !strings.Contains(attrs.Name, p.Keyword) {
+			continue
+		}
+		name := parseFileName(attrs.Name)
+		fileType := parseFileType(attrs.Name)
+
+		dir = append(dir, &File{
+			OriginalName: attrs.Name,
+			Name:         name,
+			Type:         fileType,
+			CreatedAt:    attrs.Created,
+			Prefix:       attrs.Prefix,
+			Size:         attrs.Size,
+			ContentType:  attrs.ContentType,
+			Owner:        attrs.Owner,
+		})
+	}
+	sort.Slice(dir, sortByFolder(dir))
+	return dir, nil
+}
+func ReadFile(ctx context.Context, path string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	bucket, err := client(ctx).DefaultBucket()
+	if err != nil {
+		return nil, err
+	}
+	reader, err := bucket.Object(path).NewReader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+	slurp, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("readFile: unable to read data %v", err)
+	}
+	return slurp, nil
+}
+
+func sortByFolder(dir []*File) func(i, j int) bool {
+	return func(i, j int) bool {
+		return dir[i].Type > dir[j].Type
+	}
+}
+
+func parseFileName(name string) string {
+	name = strings.TrimSuffix(name, "/")
+	split := strings.Split(name, "/")
+	last := split[len(split)-1]
+	if strings.Contains(name, ".") {
+		return last
+	}
+	return last + "/"
+}
+
+func parseFileType(name string) FileType {
+	if strings.Contains(name, ".") {
+		return FileTypeFile
+	}
+	return FileTypeFolder
 }

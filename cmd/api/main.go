@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -113,6 +115,21 @@ func handlers() http.Handler {
 					return
 				}
 				JSON(w, result)
+			})
+			r.Get("/view/{path}", func(w http.ResponseWriter, r *http.Request) {
+				originalName := chi.URLParam(r, "path")
+				buf, err := cloud.ReadFile(r.Context(), originalName)
+				if err != nil {
+					JSONErr(w, err)
+					return
+				}
+				b := bytes.NewBuffer(buf)
+				// pdf without download
+				w.Header().Set("Content-type", "application/pdf")
+				if _, err := b.WriteTo(w); err != nil {
+					fmt.Fprintf(w, "%s", err)
+				}
+				w.Write([]byte("PDF Generated"))
 			})
 			r.Post("/folder", func(w http.ResponseWriter, r *http.Request) {
 				var p struct {
