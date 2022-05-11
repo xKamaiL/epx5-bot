@@ -9,6 +9,7 @@ import (
 	"log"
 	"mime/multipart"
 	"path"
+	"sort"
 	"strings"
 	"time"
 
@@ -37,6 +38,8 @@ type File struct {
 	ContentType  string    `json:"contentType"`
 	Owner        string    `json:"owner"`
 	OriginalName string    `json:"originalName"`
+	// DB
+
 }
 type ListParam struct {
 	Prefix string `json:"prefix"`
@@ -45,8 +48,9 @@ type ListParam struct {
 
 func (p *ListParam) Valid() error {
 	p.Prefix = strings.ToLower(strings.TrimSpace(p.Prefix))
-	if p.Prefix == "" {
+	if p.Prefix != "" {
 		//p.Prefix = "/"
+		p.Prefix += "/"
 	}
 	return nil
 }
@@ -63,10 +67,10 @@ func List(ctx context.Context, q ListParam) ([]*File, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	it := bucket.Objects(ctx, &storage.Query{
 		Prefix: q.Prefix,
 	})
+
 	dir := make([]*File, 0)
 	for {
 		attrs, err := it.Next()
@@ -80,14 +84,18 @@ func List(ctx context.Context, q ListParam) ([]*File, error) {
 			continue
 		}
 
+		name := strings.Replace(attrs.Name, q.Prefix, "", 1)
 		fileType := FileTypeFile
 
-		name := strings.Replace(attrs.Name, q.Prefix, "", 1)
 		if strings.Contains(name, "/") && !strings.Contains(name, ".") {
 			fileType = FileTypeFolder
 		}
 		// skip file in sub folder
-		if strings.Count(name, "/") >= 2 && strings.HasSuffix(name, "/") {
+		if strings.Count(attrs.Name, "/") > strings.Count(q.Prefix, "/")+1 && strings.HasSuffix(name, "/") {
+			continue
+		}
+		// skip directory/file_name
+		if strings.Contains(name, "/") && !strings.HasSuffix(name, "/") {
 			continue
 		}
 
@@ -102,6 +110,10 @@ func List(ctx context.Context, q ListParam) ([]*File, error) {
 			Owner:        attrs.Owner,
 		})
 	}
+
+	sort.Slice(dir, func(i, j int) bool {
+		return dir[i].Type > dir[j].Type
+	})
 
 	return dir, nil
 }
