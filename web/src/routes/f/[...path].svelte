@@ -75,13 +75,13 @@
 <div class="grid grid-cols-12">
 	<div class="col-span-6">
 		<h1 class="text-4xl divide-gray-500 ">
-			<a href="/f/" class="hover:text-primary-500 font-bold">Folder</a>
+			<a href="/f/" class="transition-all hover:text-primary-500 font-bold">Folder</a>
 			<span class="">
 				{#each path.split(`/`) as p, i}
 					<span class="text-gray-500">/</span>
 					<a
 						href="/f{cleanPath(path.split(`/`).splice(0, i).join(`/`))}/{p}"
-						class="hover:text-primary-500 font-bold"
+						class="transition-all hover:text-primary-500 font-bold"
 					>
 						{p}
 					</a>
@@ -100,7 +100,8 @@
 	{#each data as item}
 		<a>
 			<div
-				class="p-2 divide-amber-300  cursor-pointer  group {item.originalName === path + `/`
+				class="p-2 divide-amber-300 transition-all  cursor-pointer  group {item.originalName ===
+				path + `/`
 					? `mb-2 bg-gray-200 rounded hover:bg-gray-300`
 					: `rounded bg-gray-100 hover:bg-gray-200`}"
 			>

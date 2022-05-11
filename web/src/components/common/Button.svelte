@@ -2,7 +2,7 @@
 	export let color = 'primary';
 	export let to = '';
 	export let size = 'md';
-	export const className = `btn btn-${color}`;
+	export const className = `transition-all btn btn-${color}`;
 </script>
 
 {#if to !== ''}
