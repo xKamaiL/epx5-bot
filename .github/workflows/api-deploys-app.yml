@@ -23,9 +23,9 @@ jobs:
         with:
           file: cmd/api/Dockerfile
           push: true
-          tags: asia.gcr.io/scamo-group/abdul-gg/epx5-api-service
+          tags: asia-southeast1-docker.pkg.dev/scamo-group/abdul-gg/epx5-api-service
     outputs:
-      image: asia.gcr.io/scamo-group/abdul-gg/epx5-api-service@${{ steps.docker_build.outputs.digest }}
+      image: asia-southeast1-docker.pkg.dev/scamo-group/abdul-gg/epx5-api-service@${{ steps.docker_build.outputs.digest }}
 
   deploy:
     runs-on: ubuntu-latest
