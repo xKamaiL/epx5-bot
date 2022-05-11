@@ -1,7 +1,7 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 
-const API_URL = `https://epx5-api-service-666023067909652511.rcf2.deploys.app`;
-// const API_URL = `http://localhost:8080`;
+// const API_URL = `https://epx5-api-service-666023067909652511.rcf2.deploys.app`;
+const API_URL = `http://localhost:8080`;
 const responseBody = (res: AxiosResponse) => res.data;
 
 const api = axios.create({

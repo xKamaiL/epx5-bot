@@ -93,7 +93,9 @@ func List(ctx context.Context, q ListParam) ([]*File, error) {
 			continue
 		}
 		// skip directory/file_name
-		if strings.Contains(attrs.Name, "/") && !strings.HasSuffix(attrs.Name, "/") {
+		// which not in this current prefix directory
+		if strings.Contains(strings.Replace(attrs.Name, q.Prefix, "", 1), "/") && !strings.HasSuffix(attrs.Name, "/") {
+			log.Println("skip2", name, attrs.Name)
 			continue
 		}
 
