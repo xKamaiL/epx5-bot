@@ -84,7 +84,11 @@
 								{/if}
 							</div>
 							<span class="text-primary-500 group-hover:text-primary-700">
-								{item.originalName}
+								{#if item.name === '/' && item.type === 1}
+									{item.originalName}
+								{:else}
+									{item.name}
+								{/if}
 							</span>
 						</div>
 					</div>
