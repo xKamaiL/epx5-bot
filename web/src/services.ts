@@ -27,7 +27,7 @@ api.interceptors.response.use(
 );
 
 export const FileManagerService = {
-	list: (prefix?: string) => api.get(`/api/file?prefix=${prefix}`).then(responseBody),
+	list: (prefix?: string) => api.get(`/api/file?prefix=${prefix || ''}`).then(responseBody),
 	createFolder: (name: string) =>
 		api
 			.post(`/api/file/folder`, {

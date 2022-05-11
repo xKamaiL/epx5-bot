@@ -8,11 +8,16 @@
 
 <div class="">
 	<Navbar />
-	<div class="bg-page md:mt-[105px] mt-[15px] min-h-screen relative">
+	<div class="bg-page md:mt-[105px] mt-[15px] relative">
 		<div class="mx-auto container relative">
 			<div>
 				<slot />
 			</div>
+			<footer class="text-darken mt-10 divide-amber-300 divide-y">
+				<div class="font-light">
+					Copyright (c) 2020
+				</div>
+			</footer>
 		</div>
 	</div>
 </div>
