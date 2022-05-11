@@ -3,11 +3,14 @@ package cloud
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"mime/multipart"
 	"path"
 	"time"
+
+	"google.golang.org/api/iterator"
 )
 
 var (
@@ -15,10 +18,30 @@ var (
 	ErrUploadFailed    = errors.New("upload failed")
 )
 
-func Upload(ctx context.Context, pathname string, fh multipart.FileHeader) (any, error) {
+func List(ctx context.Context) (any, error) {
+	bucket, err := client(ctx).DefaultBucket()
+	if err != nil {
+		return nil, err
+	}
+
+	it := bucket.Objects(ctx, nil)
+	for {
+		attrs, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("Bucket(%q).Objects: %v", bucket, err)
+		}
+		log.Println(attrs.Name)
+	}
+	return nil, nil
+}
+
+func Upload(ctx context.Context, pathname string, fh *multipart.FileHeader) (any, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
-	
+
 	bucket, err := client(ctx).DefaultBucket()
 	if err != nil {
 		return nil, err

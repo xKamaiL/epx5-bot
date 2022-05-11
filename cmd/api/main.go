@@ -96,5 +96,18 @@ func handlers() http.Handler {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello world"))
 	})
+	r.Post("/upload", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		_, fh, err := r.FormFile("file")
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if _, err := cloud.Upload(ctx, "test test", fh); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println("cloud upload error: ", err)
+			return
+		}
+	})
 	return r
 }
