@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/moonrhythm/parapet"
+	"github.com/moonrhythm/parapet/pkg/cors"
 
 	"github.com/xkamail/epx5-bot/fsctx"
 	"github.com/xkamail/epx5-bot/internal/cloud"
@@ -89,6 +90,8 @@ func run(ctx context.Context) error {
 		}
 		return http.HandlerFunc(fn)
 	}))
+	// inject cors
+	srv.Use(cors.New())
 	srv.Addr = net.JoinHostPort("", port)
 	log.Println("ListenAndServe on ", srv.Addr)
 	return srv.ListenAndServe()
