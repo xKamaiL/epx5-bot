@@ -1,6 +1,10 @@
 <script>
 	import '../app.css';
 	import Navbar from '../components/Navbar.svelte';
+	import { SvelteToast } from '@zerodevx/svelte-toast'
+	// Optionally set default options here
+	const options = {
+	}
 </script>
 
 <svelte:head />
@@ -14,10 +18,10 @@
 				<slot />
 			</div>
 			<footer class="text-darken mt-10 divide-amber-300 divide-y">
-				<div class="font-light">
-					Copyright (c) 2020
-				</div>
+				<div class="font-light">Copyright (c) 2020</div>
 			</footer>
 		</div>
 	</div>
 </div>
+<SvelteToast {options} />
+

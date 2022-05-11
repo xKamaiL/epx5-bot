@@ -12,8 +12,11 @@
 </script>
 
 <script>
+	import { goto } from '$app/navigation';
+
 	import { FileManagerService } from '../../services';
 	import { fileList } from '../../store.ts';
+	import { toast } from '@zerodevx/svelte-toast';
 
 	export let path;
 	export let data = [];
@@ -47,6 +50,24 @@
 		}
 		return originalName;
 	}
+
+	function routeToPathOrFile(route, obj) {
+		return async (e) => {
+			e.preventDefault();
+			if (obj.type === 1) {
+				goto(`${route}`);
+				return;
+			}
+			let id = toast.push(`Loading...`);
+			await FileManagerService.view(obj.originalName)
+				.catch((err) => {
+					console.log('view error: ' + err);
+				})
+				.finally(() => {
+					toast.pop(id);
+				});
+		};
+	}
 </script>
 
 <h1 class="text-4xl divide-gray-500 ">
@@ -67,7 +88,11 @@
 
 <div class="px-1 py-5 shadow rounded">
 	{#each data as item}
-		<a href={`/f/${upperPathCheck(item.originalName)}`} class="">
+		<a
+			on:click={routeToPathOrFile(`/f/${upperPathCheck(item.originalName)}`, item)}
+			href={`/f/${upperPathCheck(item.originalName)}`}
+			class=""
+		>
 			<div
 				class="p-2 divide-amber-300  cursor-pointer  group {item.originalName === path + `/`
 					? `mb-2 bg-gray-200 rounded hover:bg-gray-300`
